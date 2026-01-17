@@ -18,7 +18,9 @@ const SUBJECTS_LIST = [
   'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
   'Computer Science', 'Data Science', 'Web Development', 'Python',
   'JavaScript', 'Machine Learning', 'Spanish', 'French', 'German',
-  'IELTS', 'TOEFL', 'SAT Prep', 'UI/UX Design', 'Music', 'Art'
+  'IELTS', 'TOEFL', 'SAT Prep', 'UI/UX Design', 'Music', 'Art',
+  'History', 'Geography', 'Economics', 'Accounting', 'Business Studies',
+  'Psychology', 'Sociology', 'Political Science', 'Philosophy', 'Literature'
 ];
 
 const LANGUAGES_LIST = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Hindi', 'Arabic', 'Portuguese', 'Japanese', 'Korean'];
@@ -64,6 +66,9 @@ const TutorDashboard: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingMeetLink, setEditingMeetLink] = useState<string | null>(null);
   const [meetLinkInput, setMeetLinkInput] = useState('');
+
+  // Custom subject input state
+  const [customSubjectInput, setCustomSubjectInput] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -260,6 +265,31 @@ const TutorDashboard: React.FC = () => {
         ? prev.subjects.filter(s => s !== subject)
         : [...(prev.subjects || []), subject]
     }));
+  };
+
+  const addCustomSubject = () => {
+    const trimmed = customSubjectInput.trim();
+    if (trimmed && !profile.subjects?.includes(trimmed)) {
+      setProfile(prev => ({
+        ...prev,
+        subjects: [...(prev.subjects || []), trimmed]
+      }));
+      setCustomSubjectInput('');
+    }
+  };
+
+  const removeSubject = (subject: string) => {
+    setProfile(prev => ({
+      ...prev,
+      subjects: prev.subjects?.filter(s => s !== subject) || []
+    }));
+  };
+
+  const handleSubjectKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomSubject();
+    }
   };
 
   const toggleLanguage = (lang: string) => {
@@ -549,25 +579,71 @@ const TutorDashboard: React.FC = () => {
 
               {/* Subjects Card */}
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-primary-600" />
                   Subjects You Teach
                 </h2>
 
-                <div className="flex flex-wrap gap-2">
-                  {SUBJECTS_LIST.map(subject => (
+                {/* Selected Subjects Tags */}
+                {profile.subjects && profile.subjects.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Your Selected Subjects</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.subjects.map(subject => (
+                        <span
+                          key={subject}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 text-white rounded-full text-sm font-medium"
+                        >
+                          {subject}
+                          <button
+                            onClick={() => removeSubject(subject)}
+                            className="hover:bg-primary-700 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Subject Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Add Custom Subject</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customSubjectInput}
+                      onChange={(e) => setCustomSubjectInput(e.target.value)}
+                      onKeyPress={handleSubjectKeyPress}
+                      placeholder="Type a subject and press Enter..."
+                      className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
                     <button
-                      key={subject}
-                      onClick={() => toggleSubject(subject)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                        profile.subjects?.includes(subject)
-                          ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/25'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      onClick={addCustomSubject}
+                      disabled={!customSubjectInput.trim()}
+                      className="px-4 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
                     >
-                      {subject}
+                      <Plus className="w-4 h-4" />
+                      Add
                     </button>
-                  ))}
+                  </div>
+                </div>
+
+                {/* Suggested Subjects */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">Or select from suggestions</label>
+                  <div className="flex flex-wrap gap-2">
+                    {SUBJECTS_LIST.filter(s => !profile.subjects?.includes(s)).map(subject => (
+                      <button
+                        key={subject}
+                        onClick={() => toggleSubject(subject)}
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700 border border-transparent hover:border-primary-200"
+                      >
+                        + {subject}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
