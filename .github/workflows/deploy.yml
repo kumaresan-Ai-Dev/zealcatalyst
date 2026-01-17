@@ -4,17 +4,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy_frontend:
-        description: 'Deploy Frontend'
-        required: false
-        default: true
-        type: boolean
-      deploy_backend:
-        description: 'Deploy Backend'
-        required: false
-        default: true
-        type: boolean
 
 env:
   NODE_VERSION: '20'
@@ -22,7 +11,7 @@ env:
 
 jobs:
   # ============================================
-  # Build and Test Frontend
+  # Build Frontend
   # ============================================
   build-frontend:
     runs-on: ubuntu-latest
@@ -103,16 +92,21 @@ jobs:
           path: frontend/dist
 
       - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy Backend
-        if: ${{ github.event.inputs.deploy_backend != 'false' }}
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          echo "🚀 Deploying backend..."
+          echo "Deploying backend..."
           rsync -avz --delete \
             --exclude 'venv' \
             --exclude '.env' \
@@ -120,64 +114,50 @@ jobs:
             --exclude '*.pyc' \
             --exclude '.pytest_cache' \
             --exclude '.git' \
-            backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/zealcatalyst/backend/
+            backend/ ${VPS_USER}@${VPS_HOST}:/var/www/easystudy/backend/
 
       - name: Deploy Frontend
-        if: ${{ github.event.inputs.deploy_frontend != 'false' }}
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          echo "🚀 Deploying frontend..."
+          echo "Deploying frontend..."
           rsync -avz --delete \
-            frontend/dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/zealcatalyst/frontend/dist/
+            frontend/dist/ ${VPS_USER}@${VPS_HOST}:/var/www/easystudy/frontend/
 
-      - name: Install Backend Dependencies & Restart
+      - name: Install Dependencies and Restart Services
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-            echo "📦 Installing dependencies..."
-            cd /var/www/zealcatalyst/backend
+          ssh ${VPS_USER}@${VPS_HOST} 'bash -s' << 'ENDSSH'
+            echo "Installing backend dependencies..."
+            cd /var/www/easystudy/backend
             source venv/bin/activate
             pip install -r requirements.txt --quiet
 
-            echo "🔄 Restarting backend service..."
-            pm2 restart zealcatalyst-api --update-env
+            echo "Restarting backend service..."
+            sudo systemctl restart easystudy-api
 
-            echo "✅ Deployment complete!"
+            echo "Deployment complete!"
           ENDSSH
 
       - name: Health Check
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
         run: |
-          echo "🏥 Running health check..."
+          echo "Running health check..."
           sleep 10
-          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.VITE_API_URL }}/health || echo "000")
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${VITE_API_URL}/health" || echo "000")
           if [ "$response" = "200" ]; then
-            echo "✅ Health check passed!"
+            echo "Health check passed!"
           else
-            echo "⚠️ Health check returned: $response"
+            echo "Health check returned: $response (may still be starting)"
           fi
 
-      - name: Notify Success
+      - name: Deployment Summary
         if: success()
         run: |
-          echo "🎉 Deployment successful!"
+          echo "Deployment successful!"
           echo "Frontend: https://${{ secrets.DOMAIN }}"
           echo "API: ${{ secrets.VITE_API_URL }}"
-
-      - name: Notify Failure
-        if: failure()
-        run: |
-          echo "❌ Deployment failed!"
-          echo "Check the logs above for details."
-
-  # ============================================
-  # Rollback (Manual Trigger Only)
-  # ============================================
-  rollback:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    needs: deploy
-
-    steps:
-      - name: Rollback notification
-        run: |
-          echo "⚠️ If deployment failed, you can rollback manually:"
-          echo "ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}"
-          echo "pm2 logs zealcatalyst-api --lines 50"
