@@ -683,4 +683,97 @@ export const blogAPI = {
   },
 };
 
+// Withdrawal API Types
+export interface TutorStats {
+  total_sessions: number;
+  completed_sessions: number;
+  pending_sessions: number;
+  cancelled_sessions: number;
+  total_earnings: number;
+  available_balance: number;
+  pending_withdrawals: number;
+  withdrawn_amount: number;
+  currency: string;
+  monthly_sessions: number;
+  monthly_earnings: number;
+}
+
+export interface WithdrawalRequest {
+  amount: number;
+  payment_method: 'bank_transfer' | 'upi' | 'paypal';
+  payment_details: string;
+}
+
+export interface WithdrawalResponse {
+  id: string;
+  tutor_id: string;
+  tutor_name?: string;
+  tutor_email?: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  payment_details?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  admin_notes?: string;
+  transaction_id?: string;
+  created_at: string;
+  processed_at?: string;
+}
+
+export interface WithdrawalStats {
+  pending_count: number;
+  pending_amount: number;
+  approved_count: number;
+  approved_amount: number;
+  completed_count: number;
+  completed_amount: number;
+  rejected_count: number;
+  rejected_amount: number;
+  total_requests: number;
+}
+
+// Withdrawal API
+export const withdrawalAPI = {
+  // Tutor endpoints
+  getStats: async (): Promise<TutorStats> => {
+    const response = await api.get('/withdrawals/stats');
+    return response.data;
+  },
+
+  requestWithdrawal: async (data: WithdrawalRequest): Promise<WithdrawalResponse> => {
+    const response = await api.post('/withdrawals', data);
+    return response.data;
+  },
+
+  getMyWithdrawals: async (): Promise<WithdrawalResponse[]> => {
+    const response = await api.get('/withdrawals/my-requests');
+    return response.data;
+  },
+
+  // Admin endpoints
+  getAllWithdrawals: async (status?: string): Promise<WithdrawalResponse[]> => {
+    const response = await api.get('/withdrawals/admin/all', { params: status ? { status } : {} });
+    return response.data;
+  },
+
+  getPendingCount: async (): Promise<{ pending_count: number }> => {
+    const response = await api.get('/withdrawals/admin/pending-count');
+    return response.data;
+  },
+
+  updateWithdrawal: async (id: string, data: {
+    status: 'pending' | 'approved' | 'rejected' | 'completed';
+    admin_notes?: string;
+    transaction_id?: string;
+  }): Promise<WithdrawalResponse> => {
+    const response = await api.put(`/withdrawals/admin/${id}`, data);
+    return response.data;
+  },
+
+  getWithdrawalStats: async (): Promise<WithdrawalStats> => {
+    const response = await api.get('/withdrawals/admin/stats');
+    return response.data;
+  },
+};
+
 export default api;

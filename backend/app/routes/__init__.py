@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.routes import auth, tutors, bookings, subjects, availability, admin, notifications, payments, blog
+from app.routes import auth, tutors, bookings, subjects, availability, admin, notifications, payments, blog, withdrawals
 
 api_router = APIRouter()
 
@@ -12,3 +12,4 @@ api_router.include_router(admin.router, tags=["Admin"])
 api_router.include_router(notifications.router, tags=["Notifications"])
 api_router.include_router(payments.router, tags=["Payments"])
 api_router.include_router(blog.router, tags=["Blogs"])
+api_router.include_router(withdrawals.router, tags=["Withdrawals"])

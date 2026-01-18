@@ -4,12 +4,13 @@ import {
   User, Calendar, Clock, DollarSign, BookOpen,
   MapPin, GraduationCap, Save, ChevronLeft, ChevronRight,
   Plus, X, Check, AlertCircle, Users, Video,
-  Briefcase, Languages, Award, Link, Copy, ExternalLink
+  Briefcase, Languages, Award, Link, Copy, ExternalLink,
+  Wallet, TrendingUp, ArrowDownCircle, CreditCard, Building, Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { tutorsAPI, availabilityAPI, bookingsAPI } from '../services/api';
+import { tutorsAPI, availabilityAPI, bookingsAPI, withdrawalAPI } from '../services/api';
 import type { TutorProfile } from '../types';
-import type { AvailabilitySettings, WeeklySchedule, TimeSlot, CalendarDay, BlockedDate, BookingResponse } from '../services/api';
+import type { AvailabilitySettings, WeeklySchedule, TimeSlot, CalendarDay, BlockedDate, BookingResponse, TutorStats, WithdrawalResponse } from '../services/api';
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -27,7 +28,7 @@ const LANGUAGES_LIST = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'H
 
 const TutorDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'availability' | 'calendar'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'availability' | 'calendar' | 'earnings'>('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -71,6 +72,14 @@ const TutorDashboard: React.FC = () => {
   // Custom subject input state
   const [customSubjectInput, setCustomSubjectInput] = useState('');
 
+  // Earnings & Withdrawal state
+  const [tutorStats, setTutorStats] = useState<TutorStats | null>(null);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalResponse[]>([]);
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'upi' | 'paypal'>('bank_transfer');
+  const [paymentDetails, setPaymentDetails] = useState('');
+  const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -79,7 +88,62 @@ const TutorDashboard: React.FC = () => {
     if (activeTab === 'calendar') {
       fetchCalendar();
     }
+    if (activeTab === 'earnings') {
+      fetchEarnings();
+    }
   }, [currentMonth, activeTab]);
+
+  const fetchEarnings = async () => {
+    try {
+      const [statsData, withdrawalsData] = await Promise.all([
+        withdrawalAPI.getStats(),
+        withdrawalAPI.getMyWithdrawals()
+      ]);
+      setTutorStats(statsData);
+      setWithdrawals(withdrawalsData);
+    } catch (error) {
+      console.error('Failed to fetch earnings:', error);
+    }
+  };
+
+  const handleWithdrawalRequest = async () => {
+    const amount = parseFloat(withdrawalAmount);
+    if (!amount || amount <= 0) {
+      setMessage({ type: 'error', text: 'Please enter a valid amount' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+    if (!paymentDetails.trim()) {
+      setMessage({ type: 'error', text: 'Please enter payment details' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+    if (tutorStats && amount > tutorStats.available_balance) {
+      setMessage({ type: 'error', text: `Insufficient balance. Available: ${tutorStats.currency} ${tutorStats.available_balance.toFixed(2)}` });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    setWithdrawalLoading(true);
+    try {
+      await withdrawalAPI.requestWithdrawal({
+        amount,
+        payment_method: paymentMethod,
+        payment_details: paymentDetails.trim()
+      });
+      setMessage({ type: 'success', text: 'Withdrawal request submitted successfully!' });
+      setTimeout(() => setMessage(null), 3000);
+      setWithdrawalAmount('');
+      setPaymentDetails('');
+      fetchEarnings();
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } };
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to submit withdrawal request' });
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setWithdrawalLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -409,11 +473,12 @@ const TutorDashboard: React.FC = () => {
         </AnimatePresence>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           {[
             { id: 'profile', label: 'Profile Setup', icon: User },
             { id: 'availability', label: 'Weekly Schedule', icon: Clock },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
+            { id: 'earnings', label: 'Earnings', icon: Wallet },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1219,6 +1284,287 @@ const TutorDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Earnings Tab */}
+        {activeTab === 'earnings' && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            {/* Stats Cards */}
+            {tutorStats && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-100 rounded-xl">
+                      <DollarSign className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {tutorStats.currency} {tutorStats.total_earnings.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">Total Earnings</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <Wallet className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {tutorStats.currency} {tutorStats.available_balance.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">Available Balance</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-100 rounded-xl">
+                      <TrendingUp className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">{tutorStats.completed_sessions}</div>
+                      <div className="text-sm text-gray-500">Sessions Completed</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-orange-100 rounded-xl">
+                      <ArrowDownCircle className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        {tutorStats.currency} {tutorStats.withdrawn_amount.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-gray-500">Total Withdrawn</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Monthly Stats & Withdrawal Request */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Monthly Stats */}
+              {tutorStats && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary-600" />
+                    This Month
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                      <span className="text-gray-600">Sessions</span>
+                      <span className="text-xl font-bold text-gray-900">{tutorStats.monthly_sessions}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                      <span className="text-gray-600">Earnings</span>
+                      <span className="text-xl font-bold text-green-600">
+                        {tutorStats.currency} {tutorStats.monthly_earnings.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                      <span className="text-gray-600">Pending Sessions</span>
+                      <span className="text-xl font-bold text-yellow-600">{tutorStats.pending_sessions}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
+                      <span className="text-gray-600">Pending Withdrawals</span>
+                      <span className="text-xl font-bold text-orange-600">
+                        {tutorStats.currency} {tutorStats.pending_withdrawals.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Request Withdrawal */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <ArrowDownCircle className="w-5 h-5 text-primary-600" />
+                  Request Withdrawal
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Available Balance Display */}
+                  {tutorStats && (
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                      <div className="text-sm text-gray-600 mb-1">Available for Withdrawal</div>
+                      <div className="text-2xl font-bold text-green-700">
+                        {tutorStats.currency} {tutorStats.available_balance.toFixed(2)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Amount Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                        {tutorStats?.currency || 'INR'}
+                      </span>
+                      <input
+                        type="number"
+                        value={withdrawalAmount}
+                        onChange={(e) => setWithdrawalAmount(e.target.value)}
+                        placeholder="Enter amount"
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setPaymentMethod('bank_transfer')}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                          paymentMethod === 'bank_transfer'
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Building className="w-5 h-5" />
+                        <span className="text-xs font-medium">Bank</span>
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('upi')}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                          paymentMethod === 'upi'
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <Smartphone className="w-5 h-5" />
+                        <span className="text-xs font-medium">UPI</span>
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('paypal')}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                          paymentMethod === 'paypal'
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <CreditCard className="w-5 h-5" />
+                        <span className="text-xs font-medium">PayPal</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Payment Details */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {paymentMethod === 'bank_transfer' ? 'Bank Account Details' :
+                       paymentMethod === 'upi' ? 'UPI ID' : 'PayPal Email'}
+                    </label>
+                    <textarea
+                      value={paymentDetails}
+                      onChange={(e) => setPaymentDetails(e.target.value)}
+                      placeholder={
+                        paymentMethod === 'bank_transfer'
+                          ? 'Enter bank name, account number, IFSC code...'
+                          : paymentMethod === 'upi'
+                          ? 'Enter your UPI ID (e.g., name@upi)'
+                          : 'Enter your PayPal email address'
+                      }
+                      rows={paymentMethod === 'bank_transfer' ? 3 : 1}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    onClick={handleWithdrawalRequest}
+                    disabled={withdrawalLoading || !withdrawalAmount || !paymentDetails}
+                    className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-600 transition-all duration-300 shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {withdrawalLoading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <ArrowDownCircle className="w-5 h-5" />
+                        Request Withdrawal
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Withdrawal History */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary-600" />
+                Withdrawal History
+              </h3>
+
+              {withdrawals.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <ArrowDownCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No withdrawal requests yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Method</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {withdrawals.map(w => (
+                        <tr key={w.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 text-sm text-gray-600">
+                            {new Date(w.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-4 font-medium">
+                            {w.currency} {w.amount.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-600 capitalize">
+                            {w.payment_method.replace('_', ' ')}
+                          </td>
+                          <td className="px-4 py-4">
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                              w.status === 'completed' ? 'bg-green-100 text-green-700' :
+                              w.status === 'approved' ? 'bg-blue-100 text-blue-700' :
+                              w.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-500">
+                            {w.admin_notes || '-'}
+                            {w.transaction_id && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Txn: {w.transaction_id}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

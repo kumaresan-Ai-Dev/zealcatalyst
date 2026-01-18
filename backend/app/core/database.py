@@ -15,10 +15,11 @@ async def connect_to_mongo():
     from app.models.notification import Notification
     from app.models.payment import Payment, PlatformRevenue, StudentTutorRelation
     from app.models.blog import Blog
+    from app.models.withdrawal import Withdrawal
 
     await init_beanie(
         database=client[settings.DATABASE_NAME],
-        document_models=[User, TutorProfile, Subject, Booking, Review, TutorAvailability, BlockedDate, TimeSlot, Notification, Payment, PlatformRevenue, StudentTutorRelation, Blog]
+        document_models=[User, TutorProfile, Subject, Booking, Review, TutorAvailability, BlockedDate, TimeSlot, Notification, Payment, PlatformRevenue, StudentTutorRelation, Blog, Withdrawal]
     )
 
 async def close_mongo_connection():
