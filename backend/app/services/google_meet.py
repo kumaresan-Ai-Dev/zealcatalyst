@@ -27,7 +27,8 @@ from app.core.config import settings
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
 # Token file to store user's access and refresh tokens
-TOKEN_FILE = 'token.json'
+# Use absolute path based on this file's location
+TOKEN_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'token.json')
 
 
 class GoogleMeetService:
@@ -63,7 +64,12 @@ class GoogleMeetService:
             if not creds or not creds.valid:
                 if creds and creds.expired and creds.refresh_token:
                     # Refresh expired token
+                    print("Refreshing expired Google token...")
                     creds.refresh(Request())
+                    # Save the refreshed token
+                    with open(TOKEN_FILE, 'w') as token:
+                        token.write(creds.to_json())
+                    print("Token refreshed and saved successfully")
                 else:
                     # Need to authorize - this opens a browser
                     print("\n" + "="*60)
