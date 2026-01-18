@@ -17,8 +17,12 @@ class Settings(BaseSettings):
     # CORS - Add ngrok URLs for demo
     CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:5173", "https://*.ngrok-free.app", "https://*.ngrok.io"]
 
+    # Frontend URL for email links
+    FRONTEND_URL: str = "https://easystudy.cloud"
+
     # Google Calendar/Meet API Settings
     GOOGLE_CLIENT_SECRET_FILE: Optional[str] = None  # Path to OAuth client secret JSON file
+    GOOGLE_CLIENT_ID: str = "592288516654-kbk9tpf0h4gfvfhddpps31q5v1r1kpk1.apps.googleusercontent.com"  # For OAuth verification
 
     # Email/SMTP Settings
     MAIL_HOST: str = "smtp.hostinger.com"

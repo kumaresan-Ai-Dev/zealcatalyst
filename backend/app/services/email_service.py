@@ -215,7 +215,7 @@ class EmailService:
                 </table>
             </div>
             <div style="text-align: center;">
-                <a href="http://localhost:5173/{'tutor' if is_for_tutor else 'student'}/dashboard"
+                <a href="{settings.FRONTEND_URL}/{'tutor' if is_for_tutor else 'student'}/dashboard"
                    style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     {action_text}
                 </a>
@@ -301,7 +301,7 @@ Zeal Catalyst Team
                 </table>
             </div>
             <div style="text-align: center;">
-                <a href="http://localhost:5173/student/dashboard"
+                <a href="{settings.FRONTEND_URL}/student/dashboard"
                    style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     View My Bookings
                 </a>
@@ -372,7 +372,7 @@ Zeal Catalyst Team
                 You can book another session with a different time or tutor from our platform.
             </p>
             <div style="text-align: center;">
-                <a href="http://localhost:5173/find-tutors"
+                <a href="{settings.FRONTEND_URL}/find-tutors"
                    style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Find Tutors
                 </a>
@@ -431,7 +431,7 @@ Zeal Catalyst Team
                 <li>Respond promptly to booking requests</li>
             </ul>
             <div style="text-align: center;">
-                <a href="http://localhost:5173/tutor/dashboard"
+                <a href="{settings.FRONTEND_URL}/tutor/dashboard"
                    style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Go to Dashboard
                 </a>
@@ -505,7 +505,7 @@ Zeal Catalyst Team
             </p>
             {role_specific}
             <div style="text-align: center;">
-                <a href="http://localhost:5173/{'tutor' if is_tutor else 'student'}/dashboard"
+                <a href="{settings.FRONTEND_URL}/{'tutor' if is_tutor else 'student'}/dashboard"
                    style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                     Get Started
                 </a>

@@ -18,6 +18,7 @@ class User(Document):
     avatar: Optional[str] = None
     is_active: bool = True
     is_verified: bool = False
+    auth_provider: str = "local"  # "local", "google"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

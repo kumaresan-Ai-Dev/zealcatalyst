@@ -37,6 +37,11 @@ export const authAPI = {
     return response.data;
   },
 
+  googleAuth: async (credential: string, role?: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/google', { credential, role });
+    return response.data;
+  },
+
   getMe: async () => {
     const response = await api.get('/auth/me');
     return response.data;
