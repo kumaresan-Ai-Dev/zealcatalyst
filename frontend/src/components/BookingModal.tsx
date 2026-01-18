@@ -252,9 +252,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ tutor, onClose }) => {
             });
 
             if (verifyResponse.success) {
-              setMessage({ type: 'success', text: 'Payment successful! Your session has been booked.' });
+              setMessage({ type: 'success', text: 'Payment successful! Your session has been booked. Redirecting...' });
               setTimeout(() => {
                 onClose();
+                navigate('/student/dashboard');
               }, 2000);
             } else {
               setMessage({ type: 'error', text: 'Payment verification failed. Please contact support.' });

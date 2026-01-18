@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from app.models.withdrawal import Withdrawal, WithdrawalStatus, PaymentMethod
 from app.models.payment import Payment, PaymentStatus
 from app.models.booking import Booking
+from app.models.tutor import TutorProfile
 from app.models.user import User
 from app.routes.auth import get_current_user
 
@@ -98,7 +99,14 @@ async def get_tutor_stats(current_user: User = Depends(get_current_user)):
     if current_user.role != "tutor":
         raise HTTPException(status_code=403, detail="Only tutors can access this")
 
-    tutor_id = str(current_user.id)
+    # Get TutorProfile for current user
+    tutor_profile = await TutorProfile.find_one(TutorProfile.user_id == str(current_user.id))
+    if not tutor_profile:
+        raise HTTPException(status_code=404, detail="Tutor profile not found")
+
+    # Use TutorProfile ID for queries (payments/bookings use TutorProfile ID, not User ID)
+    tutor_id = str(tutor_profile.id)
+    user_id = str(current_user.id)  # For withdrawals which use User ID
 
     # Get all bookings for this tutor
     bookings = await Booking.find({"tutor_id": tutor_id}).to_list()
@@ -117,8 +125,8 @@ async def get_tutor_stats(current_user: User = Depends(get_current_user)):
     total_earnings = sum(p.tutor_earnings for p in payments)
     currency = payments[0].currency if payments else "INR"
 
-    # Get withdrawal info
-    withdrawals = await Withdrawal.find({"tutor_id": tutor_id}).to_list()
+    # Get withdrawal info (withdrawals use User ID, not TutorProfile ID)
+    withdrawals = await Withdrawal.find({"tutor_id": user_id}).to_list()
 
     pending_withdrawals = sum(
         w.amount for w in withdrawals
@@ -163,16 +171,23 @@ async def request_withdrawal(
     if current_user.role != "tutor":
         raise HTTPException(status_code=403, detail="Only tutors can request withdrawals")
 
-    tutor_id = str(current_user.id)
+    # Get TutorProfile for current user
+    tutor_profile = await TutorProfile.find_one(TutorProfile.user_id == str(current_user.id))
+    if not tutor_profile:
+        raise HTTPException(status_code=404, detail="Tutor profile not found")
 
-    # Calculate available balance
+    tutor_id = str(tutor_profile.id)  # For payment queries
+    user_id = str(current_user.id)  # For withdrawal storage/queries
+
+    # Calculate available balance (payments use TutorProfile ID)
     payments = await Payment.find({
         "tutor_id": tutor_id,
         "status": PaymentStatus.COMPLETED
     }).to_list()
     total_earnings = sum(p.tutor_earnings for p in payments)
 
-    withdrawals = await Withdrawal.find({"tutor_id": tutor_id}).to_list()
+    # Withdrawals use User ID
+    withdrawals = await Withdrawal.find({"tutor_id": user_id}).to_list()
     pending_withdrawals = sum(
         w.amount for w in withdrawals
         if w.status in [WithdrawalStatus.PENDING, WithdrawalStatus.APPROVED]
@@ -194,9 +209,9 @@ async def request_withdrawal(
             detail=f"Insufficient balance. Available: {available_balance:.2f}"
         )
 
-    # Create withdrawal request
+    # Create withdrawal request (store User ID)
     withdrawal = Withdrawal(
-        tutor_id=tutor_id,
+        tutor_id=user_id,
         tutor_name=current_user.full_name,
         tutor_email=current_user.email,
         amount=request.amount,
