@@ -8,7 +8,7 @@ import {
   Wallet, TrendingUp, ArrowDownCircle, CreditCard, Building, Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { tutorsAPI, availabilityAPI, bookingsAPI, withdrawalAPI, uploadAPI } from '../services/api';
+import { tutorsAPI, availabilityAPI, bookingsAPI, withdrawalAPI } from '../services/api';
 import ImageUpload from '../components/ImageUpload';
 import type { TutorProfile } from '../types';
 import type { AvailabilitySettings, WeeklySchedule, TimeSlot, CalendarDay, BlockedDate, BookingResponse, TutorStats, WithdrawalResponse } from '../services/api';
