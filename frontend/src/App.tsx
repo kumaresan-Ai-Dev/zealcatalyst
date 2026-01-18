@@ -15,6 +15,8 @@ import TutorDashboard from './pages/TutorDashboard';
 import TutorProfile from './pages/TutorProfile';
 import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
               <Route path="/tutor/dashboard" element={<TutorDashboard />} />
               <Route path="/student/dashboard" element={<StudentDashboard />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
             </Routes>
           </main>
           <Footer />

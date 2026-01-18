@@ -535,4 +535,152 @@ export const adminAPI = {
   },
 };
 
+// Blog API Types
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: string;
+  featured_image?: string;
+  category?: string;
+  tags: string[];
+  author_id: string;
+  author_name?: string;
+  author_avatar?: string;
+  meta_title?: string;
+  meta_description?: string;
+  status: 'draft' | 'published' | 'archived';
+  is_featured: boolean;
+  views: number;
+  likes: number;
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+}
+
+export interface BlogListItem {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  featured_image?: string;
+  category?: string;
+  tags: string[];
+  author_name?: string;
+  author_avatar?: string;
+  status: 'draft' | 'published' | 'archived';
+  is_featured: boolean;
+  views: number;
+  likes: number;
+  created_at: string;
+  published_at?: string;
+}
+
+export interface BlogPaginated {
+  blogs: BlogListItem[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface BlogCategory {
+  name: string;
+  count: number;
+}
+
+// Blog API
+export const blogAPI = {
+  // Public endpoints
+  getPublicBlogs: async (params?: {
+    page?: number;
+    per_page?: number;
+    category?: string;
+    tag?: string;
+    search?: string;
+    featured?: boolean;
+  }): Promise<BlogPaginated> => {
+    const response = await api.get('/blogs/public', { params });
+    return response.data;
+  },
+
+  getPublicBlogBySlug: async (slug: string): Promise<BlogPost> => {
+    const response = await api.get(`/blogs/public/${slug}`);
+    return response.data;
+  },
+
+  getCategories: async (): Promise<BlogCategory[]> => {
+    const response = await api.get('/blogs/public/categories/list');
+    return response.data;
+  },
+
+  getTags: async (): Promise<BlogCategory[]> => {
+    const response = await api.get('/blogs/public/tags/list');
+    return response.data;
+  },
+
+  likeBlog: async (slug: string): Promise<{ likes: number }> => {
+    const response = await api.post(`/blogs/public/${slug}/like`);
+    return response.data;
+  },
+
+  // Admin endpoints
+  getAllBlogs: async (status?: string): Promise<BlogListItem[]> => {
+    const response = await api.get('/blogs', { params: status ? { status } : {} });
+    return response.data;
+  },
+
+  getBlogById: async (id: string): Promise<BlogPost> => {
+    const response = await api.get(`/blogs/${id}`);
+    return response.data;
+  },
+
+  createBlog: async (data: {
+    title: string;
+    excerpt?: string;
+    content: string;
+    featured_image?: string;
+    category?: string;
+    tags?: string[];
+    meta_title?: string;
+    meta_description?: string;
+    status?: 'draft' | 'published' | 'archived';
+    is_featured?: boolean;
+  }): Promise<BlogPost> => {
+    const response = await api.post('/blogs', data);
+    return response.data;
+  },
+
+  updateBlog: async (id: string, data: {
+    title?: string;
+    excerpt?: string;
+    content?: string;
+    featured_image?: string;
+    category?: string;
+    tags?: string[];
+    meta_title?: string;
+    meta_description?: string;
+    status?: 'draft' | 'published' | 'archived';
+    is_featured?: boolean;
+  }): Promise<BlogPost> => {
+    const response = await api.put(`/blogs/${id}`, data);
+    return response.data;
+  },
+
+  deleteBlog: async (id: string): Promise<void> => {
+    await api.delete(`/blogs/${id}`);
+  },
+
+  publishBlog: async (id: string): Promise<BlogPost> => {
+    const response = await api.post(`/blogs/${id}/publish`);
+    return response.data;
+  },
+
+  unpublishBlog: async (id: string): Promise<BlogPost> => {
+    const response = await api.post(`/blogs/${id}/unpublish`);
+    return response.data;
+  },
+};
+
 export default api;
