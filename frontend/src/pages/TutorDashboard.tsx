@@ -5,7 +5,8 @@ import {
   MapPin, GraduationCap, Save, ChevronLeft, ChevronRight,
   Plus, X, Check, AlertCircle, Users, Video,
   Briefcase, Languages, Award, Link, Copy, ExternalLink,
-  Wallet, TrendingUp, ArrowDownCircle, CreditCard, Building, Smartphone
+  Wallet, TrendingUp, ArrowDownCircle, CreditCard, Building, Smartphone,
+  FileText, ClipboardList, MessageSquare, Upload, Download, Trash2, Star
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { tutorsAPI, availabilityAPI, bookingsAPI, withdrawalAPI } from '../services/api';
@@ -27,9 +28,44 @@ const SUBJECTS_LIST = [
 
 const LANGUAGES_LIST = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Hindi', 'Arabic', 'Portuguese', 'Japanese', 'Korean'];
 
+// Types for new features
+interface Material {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  file_url?: string;
+  file_name?: string;
+  created_at: string;
+}
+
+interface Assignment {
+  id: string;
+  title: string;
+  description: string;
+  subject: string;
+  due_date: string;
+  student_id?: string;
+  student_name?: string;
+  status: 'pending' | 'submitted' | 'graded';
+  max_marks: number;
+  obtained_marks?: number;
+  created_at: string;
+}
+
+interface StudentFeedback {
+  id: string;
+  student_name: string;
+  subject: string;
+  rating: number;
+  comment: string;
+  session_date: string;
+  created_at: string;
+}
+
 const TutorDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'availability' | 'calendar' | 'earnings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'availability' | 'calendar' | 'earnings' | 'materials' | 'assignments' | 'feedback'>('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -80,6 +116,19 @@ const TutorDashboard: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'bank_transfer' | 'upi' | 'paypal'>('bank_transfer');
   const [paymentDetails, setPaymentDetails] = useState('');
   const [withdrawalLoading, setWithdrawalLoading] = useState(false);
+
+  // Materials state
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [materialForm, setMaterialForm] = useState({ title: '', description: '', subject: '' });
+
+  // Assignments state
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [showAssignmentForm, setShowAssignmentForm] = useState(false);
+  const [assignmentForm, setAssignmentForm] = useState({ title: '', description: '', subject: '', due_date: '', max_marks: 100 });
+
+  // Feedback state
+  const [feedbacks, setFeedbacks] = useState<StudentFeedback[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -476,9 +525,12 @@ const TutorDashboard: React.FC = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           {[
-            { id: 'profile', label: 'Profile Setup', icon: User },
-            { id: 'availability', label: 'Weekly Schedule', icon: Clock },
+            { id: 'profile', label: 'Profile', icon: User },
+            { id: 'availability', label: 'Schedule', icon: Clock },
             { id: 'calendar', label: 'Calendar', icon: Calendar },
+            { id: 'materials', label: 'Materials', icon: FileText },
+            { id: 'assignments', label: 'Assignments', icon: ClipboardList },
+            { id: 'feedback', label: 'Feedback', icon: MessageSquare },
             { id: 'earnings', label: 'Earnings', icon: Wallet },
           ].map(tab => (
             <button
@@ -1316,6 +1368,449 @@ const TutorDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Materials Tab */}
+        {activeTab === 'materials' && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Reading Materials</h2>
+                <p className="text-gray-600">Upload and manage ebooks, PDFs, and study materials for your students</p>
+              </div>
+              <button
+                onClick={() => setShowMaterialForm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Add Material
+              </button>
+            </div>
+
+            {/* Add Material Form Modal */}
+            {showMaterialForm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-2xl p-6 w-full max-w-lg"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Material</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                      <input
+                        type="text"
+                        value={materialForm.title}
+                        onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })}
+                        placeholder="e.g., Introduction to Calculus"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                      <select
+                        value={materialForm.subject}
+                        onChange={(e) => setMaterialForm({ ...materialForm, subject: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">Select Subject</option>
+                        {profile.subjects?.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={materialForm.description}
+                        onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })}
+                        placeholder="Brief description of the material..."
+                        rows={3}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Upload File (PDF, DOC, etc.)</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary-400 transition-colors cursor-pointer">
+                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
+                        <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, PPT up to 10MB</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setShowMaterialForm(false)}
+                      className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Add material logic here
+                        const newMaterial: Material = {
+                          id: Date.now().toString(),
+                          ...materialForm,
+                          created_at: new Date().toISOString()
+                        };
+                        setMaterials([newMaterial, ...materials]);
+                        setMaterialForm({ title: '', description: '', subject: '' });
+                        setShowMaterialForm(false);
+                        setMessage({ type: 'success', text: 'Material added successfully!' });
+                        setTimeout(() => setMessage(null), 3000);
+                      }}
+                      disabled={!materialForm.title || !materialForm.subject}
+                      className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add Material
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* Materials List */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {materials.length === 0 ? (
+                <div className="p-12 text-center">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Materials Yet</h3>
+                  <p className="text-gray-500 mb-4">Start by adding your first reading material for students</p>
+                  <button
+                    onClick={() => setShowMaterialForm(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors font-medium"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Your First Material
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {materials.map(material => (
+                    <div key={material.id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-primary-100 rounded-xl">
+                            <FileText className="w-6 h-6 text-primary-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{material.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{material.description}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{material.subject}</span>
+                              <span className="text-xs text-gray-400">
+                                Added {new Date(material.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
+                            <Download className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => setMaterials(materials.filter(m => m.id !== material.id))}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Assignments Tab */}
+        {activeTab === 'assignments' && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Assignments & Projects</h2>
+                <p className="text-gray-600">Create and manage assignments for your students</p>
+              </div>
+              <button
+                onClick={() => setShowAssignmentForm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Create Assignment
+              </button>
+            </div>
+
+            {/* Add Assignment Form Modal */}
+            {showAssignmentForm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-2xl p-6 w-full max-w-lg"
+                >
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Create New Assignment</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                      <input
+                        type="text"
+                        value={assignmentForm.title}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, title: e.target.value })}
+                        placeholder="e.g., Chapter 5 Exercises"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                      <select
+                        value={assignmentForm.subject}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, subject: e.target.value })}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="">Select Subject</option>
+                        {profile.subjects?.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={assignmentForm.description}
+                        onChange={(e) => setAssignmentForm({ ...assignmentForm, description: e.target.value })}
+                        placeholder="Assignment instructions and details..."
+                        rows={3}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                        <input
+                          type="date"
+                          value={assignmentForm.due_date}
+                          onChange={(e) => setAssignmentForm({ ...assignmentForm, due_date: e.target.value })}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Max Marks</label>
+                        <input
+                          type="number"
+                          value={assignmentForm.max_marks}
+                          onChange={(e) => setAssignmentForm({ ...assignmentForm, max_marks: parseInt(e.target.value) || 100 })}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setShowAssignmentForm(false)}
+                      className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newAssignment: Assignment = {
+                          id: Date.now().toString(),
+                          ...assignmentForm,
+                          status: 'pending',
+                          created_at: new Date().toISOString()
+                        };
+                        setAssignments([newAssignment, ...assignments]);
+                        setAssignmentForm({ title: '', description: '', subject: '', due_date: '', max_marks: 100 });
+                        setShowAssignmentForm(false);
+                        setMessage({ type: 'success', text: 'Assignment created successfully!' });
+                        setTimeout(() => setMessage(null), 3000);
+                      }}
+                      disabled={!assignmentForm.title || !assignmentForm.subject || !assignmentForm.due_date}
+                      className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Create Assignment
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* Assignments List */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {assignments.length === 0 ? (
+                <div className="p-12 text-center">
+                  <ClipboardList className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Assignments Yet</h3>
+                  <p className="text-gray-500 mb-4">Create your first assignment for students</p>
+                  <button
+                    onClick={() => setShowAssignmentForm(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors font-medium"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Create Your First Assignment
+                  </button>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {assignments.map(assignment => (
+                    <div key={assignment.id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className={`p-3 rounded-xl ${
+                            assignment.status === 'graded' ? 'bg-green-100' :
+                            assignment.status === 'submitted' ? 'bg-blue-100' : 'bg-yellow-100'
+                          }`}>
+                            <ClipboardList className={`w-6 h-6 ${
+                              assignment.status === 'graded' ? 'text-green-600' :
+                              assignment.status === 'submitted' ? 'text-blue-600' : 'text-yellow-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{assignment.title}</h4>
+                            <p className="text-sm text-gray-600 mt-1">{assignment.description}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{assignment.subject}</span>
+                              <span className="text-xs text-gray-500">Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
+                              <span className="text-xs text-gray-500">Max Marks: {assignment.max_marks}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            assignment.status === 'graded' ? 'bg-green-100 text-green-700' :
+                            assignment.status === 'submitted' ? 'bg-blue-100 text-blue-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {assignment.status}
+                          </span>
+                          <button
+                            onClick={() => setAssignments(assignments.filter(a => a.id !== assignment.id))}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Feedback Tab */}
+        {activeTab === 'feedback' && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
+          >
+            {/* Header */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Student Feedback & Evaluation</h2>
+              <p className="text-gray-600">View feedback and ratings from your students</p>
+            </div>
+
+            {/* Stats Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-yellow-100 rounded-xl">
+                    <Star className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {feedbacks.length > 0
+                        ? (feedbacks.reduce((acc, f) => acc + f.rating, 0) / feedbacks.length).toFixed(1)
+                        : '0.0'}
+                    </div>
+                    <div className="text-sm text-gray-500">Average Rating</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <MessageSquare className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">{feedbacks.length}</div>
+                    <div className="text-sm text-gray-500">Total Reviews</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 rounded-xl">
+                    <Users className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {new Set(feedbacks.map(f => f.student_name)).size}
+                    </div>
+                    <div className="text-sm text-gray-500">Unique Students</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback List */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {feedbacks.length === 0 ? (
+                <div className="p-12 text-center">
+                  <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Feedback Yet</h3>
+                  <p className="text-gray-500">Feedback from your students will appear here after sessions</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {feedbacks.map(feedback => (
+                    <div key={feedback.id} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold">
+                          {feedback.student_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{feedback.student_name}</h4>
+                              <p className="text-sm text-gray-500">{feedback.subject}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`w-5 h-5 ${i < feedback.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-gray-700 mt-3">{feedback.comment}</p>
+                          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                            <span>Session: {new Date(feedback.session_date).toLocaleDateString()}</span>
+                            <span>Reviewed: {new Date(feedback.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

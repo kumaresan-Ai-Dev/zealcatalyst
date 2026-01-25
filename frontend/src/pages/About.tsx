@@ -34,28 +34,11 @@ const values = [
 
 const team = [
   {
-    name: 'Alexandra Chen',
-    role: 'CEO & Co-Founder',
-    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alexandra',
-    bio: 'Former educator with 15 years of experience in EdTech.',
-  },
-  {
-    name: 'Marcus Johnson',
-    role: 'CTO & Co-Founder',
-    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
-    bio: 'Tech veteran who led engineering teams at top tech companies.',
-  },
-  {
-    name: 'Priya Sharma',
-    role: 'Head of Operations',
-    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya',
-    bio: 'Operations expert with a passion for scaling education platforms.',
-  },
-  {
-    name: 'David Kim',
-    role: 'Head of Product',
-    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DavidK',
-    bio: 'Product leader focused on creating delightful user experiences.',
+    name: 'Saarunya Murali',
+    role: 'Director',
+    image: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Saarunya&backgroundColor=b6e3f4',
+    bio: 'As the Director, Saarunya Murali brings a wealth of expertise in education, training, and people management. With over 6 years of industrial experience, she has guided numerous student projects as a skilled HR researcher, subject matter expert, and analyst. A former educator and public speaker, she has a proven track record of enhancing personality development and has conducted sessions on The Art of Parenting, focusing on holistic child development and parental growth. Her leadership extends to overseeing office management, driving operational excellence and strategic growth.',
+    featured: true,
   },
 ];
 
@@ -117,9 +100,9 @@ const About: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h3>
               <p className="text-gray-600 leading-relaxed">
-                To make quality education accessible to everyone, everywhere. We believe that
-                personalized learning is the key to unlocking human potential, and we're building
-                the platform to make it happen.
+                Our mission is to bridge the gap, connecting learners from rural places to global cities,
+                and empowering them with expert guidance. We believe quality education shouldn't be limited
+                by location or background - it should be accessible to all in a cost effective manner.
               </p>
             </motion.div>
 
@@ -135,9 +118,10 @@ const About: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">Our Vision</h3>
               <p className="text-gray-600 leading-relaxed">
-                A world where geography, economics, or background doesn't limit access to
-                exceptional education. We envision a global learning community where knowledge
-                flows freely across borders.
+                We envision a global learning community where knowledge flows freely across borders,
+                fostering collaboration, innovation, and understanding. A community where learners,
+                educators, and experts from diverse backgrounds come together to share insights, ideas,
+                and experiences, driving progress and positive change worldwide.
               </p>
             </motion.div>
           </div>
@@ -245,7 +229,7 @@ const About: React.FC = () => {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="max-w-4xl mx-auto">
             {team.map((member, index) => (
               <motion.div
                 key={member.name}
@@ -253,16 +237,24 @@ const About: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="card p-6 text-center"
+                className="card p-8 md:p-12"
               >
-                <img
-                  src={member.image}
-                  alt={member.name}
-                  className="w-24 h-24 mx-auto mb-4 rounded-full"
-                />
-                <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                <p className="text-primary-600 text-sm mb-2">{member.role}</p>
-                <p className="text-gray-600 text-sm">{member.bio}</p>
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                  <div className="flex-shrink-0">
+                    <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 p-1">
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full rounded-xl bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl font-bold text-gray-900">{member.name}</h3>
+                    <p className="text-primary-600 font-semibold mb-4">{member.role}</p>
+                    <p className="text-gray-600 leading-relaxed">{member.bio}</p>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>

@@ -84,15 +84,31 @@ const Footer: React.FC = () => {
             <ul className="space-y-4">
               <li className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-primary-500" />
-                <span>support@zealcatalyst.com</span>
+                <a href="mailto:Zealcatalyst.zeca@gmail.com" className="hover:text-white transition-colors">
+                  Zealcatalyst.zeca@gmail.com
+                </a>
               </li>
-              <li className="flex items-center space-x-3">
-                <Phone className="w-5 h-5 text-primary-500" />
-                <span>+1 (555) 123-4567</span>
+              <li className="flex items-start space-x-3">
+                <Phone className="w-5 h-5 text-primary-500 mt-1" />
+                <div className="flex flex-col">
+                  <a href="tel:+919363285275" className="hover:text-white transition-colors">+91 93632 85275</a>
+                  <a href="tel:+919123501991" className="hover:text-white transition-colors">+91 91235 01991</a>
+                </div>
               </li>
               <li className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-primary-500 mt-1" />
-                <span>123 Education Street,<br />Learning City, LC 12345</span>
+                <div className="flex flex-col space-y-2">
+                  <span className="text-sm">
+                    <strong className="text-white">Dubai:</strong><br />
+                    203, Al Faraj Building,<br />
+                    Al Nahda 2, Dubai, UAE
+                  </span>
+                  <span className="text-sm">
+                    <strong className="text-white">Chennai:</strong><br />
+                    No.5, Thiruvalluvar Nagar,<br />
+                    Chrompet, Chennai-44, India
+                  </span>
+                </div>
               </li>
             </ul>
           </div>
