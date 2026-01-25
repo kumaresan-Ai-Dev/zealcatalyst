@@ -22,7 +22,8 @@ class Settings(BaseSettings):
 
     # Google Calendar/Meet API Settings
     GOOGLE_CLIENT_SECRET_FILE: Optional[str] = None  # Path to OAuth client secret JSON file
-    GOOGLE_CLIENT_ID: str = "592288516654-kbk9tpf0h4gfvfhddpps31q5v1r1kpk1.apps.googleusercontent.com"  # For OAuth verification
+    GOOGLE_CLIENT_ID: str = ""  # For OAuth verification (set in .env)
+    GOOGLE_CLIENT_SECRET: str = ""  # Google OAuth client secret (set in .env)
 
     # Email/SMTP Settings
     MAIL_HOST: str = "smtp.hostinger.com"

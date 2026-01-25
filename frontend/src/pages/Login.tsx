@@ -5,8 +5,8 @@ import { Mail, Lock, Eye, EyeOff, BookOpen, ArrowRight, Info } from 'lucide-reac
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 
-// Google Client ID
-const GOOGLE_CLIENT_ID = '592288516654-kbk9tpf0h4gfvfhddpps31q5v1r1kpk1.apps.googleusercontent.com';
+// Google Client ID from environment variable
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 // Declare google global
 declare global {
