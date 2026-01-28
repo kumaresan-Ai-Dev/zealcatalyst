@@ -319,7 +319,13 @@ async def get_my_ratings(current_user: User = Depends(get_current_user)):
     if current_user.role == "student":
         ratings = await TutorRating.find(TutorRating.student_id == str(current_user.id)).to_list()
     else:
-        ratings = await TutorRating.find(TutorRating.tutor_id == str(current_user.id)).to_list()
+        # For tutors, we need to get the TutorProfile ID first
+        from app.models.tutor import TutorProfile
+        tutor_profile = await TutorProfile.find_one(TutorProfile.user_id == str(current_user.id))
+        if tutor_profile:
+            ratings = await TutorRating.find(TutorRating.tutor_id == str(tutor_profile.id)).to_list()
+        else:
+            ratings = []
 
     return [
         RatingResponse(
