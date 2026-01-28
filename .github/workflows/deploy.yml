@@ -143,7 +143,9 @@ jobs:
         run: |
           echo "Running health check..."
           sleep 10
-          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.VITE_API_URL }}/health" || echo "000")
+          # Health endpoint is at /health, not /api/health
+          API_BASE=$(echo "${{ secrets.VITE_API_URL }}" | sed 's|/api$||')
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${API_BASE}/health" || echo "000")
           if [ "$response" = "200" ]; then
             echo "Health check passed!"
           else
