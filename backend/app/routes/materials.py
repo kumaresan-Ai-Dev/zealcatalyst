@@ -85,7 +85,7 @@ class RatingResponse(BaseModel):
 @router.post("/materials", response_model=MaterialResponse)
 async def create_material(
     title: str = Form(...),
-    description: str = Form(...),
+    description: str = Form(""),
     subject: str = Form(...),
     file: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user)

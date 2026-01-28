@@ -528,6 +528,33 @@ const TutorDashboard: React.FC = () => {
           )}
         </AnimatePresence>
 
+        {/* Pending Bookings Alert */}
+        {bookings.filter(b => b.status === 'pending').length > 0 && activeTab !== 'calendar' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 rounded-full">
+                <AlertCircle className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div>
+                <p className="font-medium text-yellow-800">
+                  You have {bookings.filter(b => b.status === 'pending').length} pending booking request{bookings.filter(b => b.status === 'pending').length > 1 ? 's' : ''}
+                </p>
+                <p className="text-sm text-yellow-600">Review and confirm to avoid missing sessions</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-colors font-medium"
+            >
+              View Requests
+            </button>
+          </motion.div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
           {[
@@ -542,7 +569,7 @@ const TutorDashboard: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all duration-300 relative ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -550,6 +577,11 @@ const TutorDashboard: React.FC = () => {
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
+              {tab.id === 'calendar' && bookings.filter(b => b.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {bookings.filter(b => b.status === 'pending').length}
+                </span>
+              )}
             </button>
           ))}
         </div>

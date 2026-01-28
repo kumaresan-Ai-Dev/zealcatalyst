@@ -491,10 +491,23 @@ const StudentDashboard: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors">
-                          <Download className="w-4 h-4" />
-                          Download
-                        </button>
+                        {material.file_url ? (
+                          <a
+                            href={material.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 rounded-xl cursor-not-allowed">
+                            <Download className="w-4 h-4" />
+                            No File
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
