@@ -204,6 +204,76 @@ class MinIOService:
         except Exception:
             return None
 
+    async def upload_file(self, file, folder: str = "files") -> Optional[dict]:
+        """
+        Upload any file to MinIO (for materials, documents, etc.)
+
+        Args:
+            file: FastAPI UploadFile object
+            folder: Folder/prefix for organizing files
+
+        Returns:
+            Dictionary with file URL and object name, or None if failed
+        """
+        self._ensure_initialized()
+        if not self.client:
+            return None
+
+        try:
+            # Read file content
+            file_data = await file.read()
+
+            # Generate unique filename
+            ext = file.filename.lower().split('.')[-1] if '.' in file.filename else 'bin'
+            unique_name = f"{folder}/{uuid.uuid4().hex}.{ext}"
+
+            # Get content type
+            content_type = file.content_type or 'application/octet-stream'
+
+            # Upload to MinIO
+            self.client.put_object(
+                self.bucket,
+                unique_name,
+                io.BytesIO(file_data),
+                length=len(file_data),
+                content_type=content_type
+            )
+
+            # Generate public URL
+            if settings.MINIO_PUBLIC_URL:
+                url = f"{settings.MINIO_PUBLIC_URL}/{self.bucket}/{unique_name}"
+            else:
+                protocol = "https" if settings.MINIO_SECURE else "http"
+                url = f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket}/{unique_name}"
+
+            print(f"Uploaded file: {unique_name}")
+
+            return {
+                "url": url,
+                "object_name": unique_name,
+                "size": len(file_data),
+                "content_type": content_type
+            }
+
+        except Exception as e:
+            print(f"Error uploading file: {e}")
+            return None
+
+    async def delete_file(self, url: str) -> bool:
+        """
+        Delete a file from MinIO by its URL
+
+        Args:
+            url: The full URL of the file
+
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        object_name = self.extract_object_name_from_url(url)
+        if object_name:
+            return self.delete_image(object_name)
+        return False
+
 
 # Singleton instance
 minio_service = MinIOService()
