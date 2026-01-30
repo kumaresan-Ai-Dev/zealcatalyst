@@ -137,11 +137,21 @@ async def create_material(
 
 @router.get("/materials", response_model=List[MaterialResponse])
 async def get_materials(current_user: User = Depends(get_current_user)):
-    """Get materials - tutors see their own, students see all"""
+    """Get materials - tutors see their own, students see only from tutors they've booked with"""
     if current_user.role == "tutor":
         materials = await Material.find(Material.tutor_id == str(current_user.id)).to_list()
     else:
-        materials = await Material.find_all().to_list()
+        # Get tutors the student has booked sessions with
+        from app.models.booking import Booking
+        bookings = await Booking.find(Booking.student_id == str(current_user.id)).to_list()
+        tutor_ids = list(set(b.tutor_id for b in bookings if b.tutor_id))
+
+        if tutor_ids:
+            # Only get materials from tutors the student has booked with
+            from beanie.operators import In
+            materials = await Material.find(In(Material.tutor_id, tutor_ids)).to_list()
+        else:
+            materials = []
 
     return [
         MaterialResponse(
@@ -298,6 +308,20 @@ async def create_rating(
         session_date=data.session_date
     )
     await rating.insert()
+
+    # Update tutor's average rating in their profile
+    try:
+        from app.models.tutor import TutorProfile
+        all_ratings = await TutorRating.find(TutorRating.tutor_id == data.tutor_id).to_list()
+        if all_ratings:
+            avg_rating = sum(r.rating for r in all_ratings) / len(all_ratings)
+            tutor_profile = await TutorProfile.get(data.tutor_id)
+            if tutor_profile:
+                tutor_profile.rating = round(avg_rating, 1)
+                tutor_profile.total_reviews = len(all_ratings)
+                await tutor_profile.save()
+    except Exception as e:
+        print(f"Failed to update tutor rating: {e}")
 
     return RatingResponse(
         id=str(rating.id),
