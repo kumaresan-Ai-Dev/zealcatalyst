@@ -312,13 +312,26 @@ async def cancel_booking(
 @router.get("/tutor/my-bookings", response_model=List[BookingResponse])
 async def get_tutor_bookings(current_user: User = Depends(get_current_user)):
     """Get all bookings for the current tutor"""
+    print(f"[TutorBookings] Fetching bookings for user: {current_user.id} ({current_user.email})")
+
     tutor = await TutorProfile.find_one(TutorProfile.user_id == str(current_user.id))
     if not tutor:
+        print(f"[TutorBookings] No tutor profile found for user_id: {current_user.id}")
         raise HTTPException(status_code=404, detail="Tutor profile not found")
+
+    print(f"[TutorBookings] Found tutor profile ID: {tutor.id}")
 
     bookings = await Booking.find(
         Booking.tutor_id == str(tutor.id)
     ).sort("-scheduled_at").to_list()
+
+    print(f"[TutorBookings] Found {len(bookings)} bookings for tutor {tutor.id}")
+
+    # Also check if there are any bookings with different tutor_id format
+    all_bookings = await Booking.find_all().to_list()
+    print(f"[TutorBookings] Total bookings in system: {len(all_bookings)}")
+    for b in all_bookings[:5]:
+        print(f"[TutorBookings] Booking {b.id}: tutor_id={b.tutor_id}, status={b.status}")
 
     return [create_booking_response(b) for b in bookings]
 
