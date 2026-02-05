@@ -27,8 +27,9 @@ from app.core.config import settings
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
 # Token file to store user's access and refresh tokens
-# Use absolute path based on this file's location
-TOKEN_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'token.json')
+# Use path relative to backend directory (same level as app folder)
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+TOKEN_FILE = os.path.join(BACKEND_DIR, 'token.json')
 
 
 class GoogleMeetService:
@@ -45,20 +46,28 @@ class GoogleMeetService:
 
     def _initialize_service(self):
         """Initialize the Google Calendar service with OAuth credentials"""
+        print(f"[GoogleMeet] Initializing service...")
+        print(f"[GoogleMeet] TOKEN_FILE path: {TOKEN_FILE}")
+        print(f"[GoogleMeet] CLIENT_SECRET_FILE: {settings.GOOGLE_CLIENT_SECRET_FILE}")
+
         if not settings.GOOGLE_CLIENT_SECRET_FILE:
-            print("Warning: GOOGLE_CLIENT_SECRET_FILE not configured. Meet links will not be generated.")
+            print("[GoogleMeet] Warning: GOOGLE_CLIENT_SECRET_FILE not configured. Meet links will not be generated.")
             return
 
         if not os.path.exists(settings.GOOGLE_CLIENT_SECRET_FILE):
-            print(f"Warning: Client secret file not found at {settings.GOOGLE_CLIENT_SECRET_FILE}")
+            print(f"[GoogleMeet] Warning: Client secret file not found at {settings.GOOGLE_CLIENT_SECRET_FILE}")
             return
 
         try:
             creds = None
 
             # Check if we have saved tokens
+            print(f"[GoogleMeet] Checking for token file at: {TOKEN_FILE}")
+            print(f"[GoogleMeet] Token file exists: {os.path.exists(TOKEN_FILE)}")
+
             if os.path.exists(TOKEN_FILE):
                 creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+                print(f"[GoogleMeet] Loaded credentials from token file")
 
             # If no valid credentials, let user login
             if not creds or not creds.valid:
