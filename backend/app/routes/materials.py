@@ -192,18 +192,35 @@ async def get_materials(current_user: User = Depends(get_current_user)):
         # Get tutors the student has booked sessions with
         from app.models.booking import Booking
         bookings = await Booking.find(Booking.student_id == str(current_user.id)).to_list()
-        tutor_ids = list(set(b.tutor_id for b in bookings if b.tutor_id))
+        tutor_profile_ids = list(set(b.tutor_id for b in bookings if b.tutor_id))
+        print(f"[Materials] Student {current_user.id} has bookings with tutor profiles: {tutor_profile_ids}")
 
-        if tutor_ids:
+        if tutor_profile_ids:
             # Get tutor user IDs from tutor profiles
             from app.models.tutor import TutorProfile
             from beanie.operators import In
-            tutor_profiles = await TutorProfile.find(In(TutorProfile.id, [tutor_ids])).to_list()
+
+            # Convert string IDs to ObjectId for proper lookup
+            from bson import ObjectId
+            profile_object_ids = []
+            for pid in tutor_profile_ids:
+                try:
+                    profile_object_ids.append(ObjectId(pid))
+                except:
+                    pass
+
+            tutor_profiles = await TutorProfile.find(In(TutorProfile.id, profile_object_ids)).to_list()
+            print(f"[Materials] Found {len(tutor_profiles)} tutor profiles")
+
             tutor_user_ids = [tp.user_id for tp in tutor_profiles]
-            tutor_user_ids.extend(tutor_ids)  # Also include the tutor_ids in case they are user_ids
+            print(f"[Materials] Tutor user IDs: {tutor_user_ids}")
 
             # Get all materials from tutors the student has booked with
-            all_materials = await Material.find(In(Material.tutor_id, tutor_user_ids)).to_list()
+            if tutor_user_ids:
+                all_materials = await Material.find(In(Material.tutor_id, tutor_user_ids)).to_list()
+            else:
+                all_materials = []
+            print(f"[Materials] Found {len(all_materials)} materials from these tutors")
 
             # Filter materials: only show if shared_with_all=True OR student is in student_ids
             student_id = str(current_user.id)
@@ -211,6 +228,7 @@ async def get_materials(current_user: User = Depends(get_current_user)):
                 m for m in all_materials
                 if m.shared_with_all or student_id in m.student_ids
             ]
+            print(f"[Materials] After filtering for student {student_id}: {len(materials)} materials")
         else:
             materials = []
 
