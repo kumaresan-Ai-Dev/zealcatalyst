@@ -314,7 +314,7 @@ const StudentDashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
                       <DollarSign className="w-4 h-4" />
-                      <span className="text-sm">${booking.price.toFixed(2)}</span>
+                      <span className="text-sm">{booking.currency === 'INR' ? '₹' : '$'}{booking.price.toFixed(2)}</span>
                     </div>
                   </div>
 

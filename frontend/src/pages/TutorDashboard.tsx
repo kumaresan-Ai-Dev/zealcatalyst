@@ -1287,7 +1287,7 @@ const TutorDashboard: React.FC = () => {
                           </div>
 
                           <div className="mt-2 text-sm font-medium text-gray-700">
-                            ${booking.price.toFixed(2)} • {booking.duration_minutes} min • {booking.session_type}
+                            {booking.currency === 'INR' ? '₹' : '$'}{booking.price.toFixed(2)} • {booking.duration_minutes} min • {booking.session_type}
                           </div>
 
                           {/* Meet Link Section */}

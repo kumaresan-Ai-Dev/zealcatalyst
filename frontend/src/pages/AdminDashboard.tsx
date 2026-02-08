@@ -532,11 +532,11 @@ const AdminDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Total Revenue</span>
-                    <span className="text-2xl font-bold text-green-600">${stats.revenue_total.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-green-600">₹{stats.revenue_total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">This Month</span>
-                    <span className="text-xl font-bold text-green-600">${stats.revenue_this_month.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-green-600">₹{stats.revenue_this_month.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -868,7 +868,7 @@ const AdminDashboard: React.FC = () => {
                         {new Date(b.scheduled_at).toLocaleDateString()}<br />
                         {new Date(b.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td className="px-6 py-4 font-medium">${b.price.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-medium">₹{b.price.toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <select
                           value={b.status}
@@ -959,7 +959,7 @@ const AdminDashboard: React.FC = () => {
                     <DollarSign className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-gray-900">${revenueStats.total_revenue.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{revenueStats.total_revenue.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">Total Platform Revenue</div>
                   </div>
                 </div>
@@ -970,7 +970,7 @@ const AdminDashboard: React.FC = () => {
                     <Percent className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-gray-900">${revenueStats.total_commission_fees.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{revenueStats.total_commission_fees.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">Commission Fees (5%)</div>
                   </div>
                 </div>
@@ -981,7 +981,7 @@ const AdminDashboard: React.FC = () => {
                     <UserPlus className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-gray-900">${revenueStats.total_admission_fees.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{revenueStats.total_admission_fees.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">Admission Fees (10%)</div>
                   </div>
                 </div>
@@ -992,7 +992,7 @@ const AdminDashboard: React.FC = () => {
                     <ArrowUpRight className="w-6 h-6 text-orange-600" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-gray-900">${revenueStats.total_tutor_payouts.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-gray-900">₹{revenueStats.total_tutor_payouts.toFixed(2)}</div>
                     <div className="text-sm text-gray-500">Tutor Payouts</div>
                   </div>
                 </div>
@@ -1009,15 +1009,15 @@ const AdminDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Revenue</span>
-                    <span className="text-xl font-bold text-green-600">${revenueStats.monthly_revenue.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-green-600">₹{revenueStats.monthly_revenue.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Commission</span>
-                    <span className="font-bold text-blue-600">${revenueStats.monthly_commission_fees.toFixed(2)}</span>
+                    <span className="font-bold text-blue-600">₹{revenueStats.monthly_commission_fees.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Admission</span>
-                    <span className="font-bold text-purple-600">${revenueStats.monthly_admission_fees.toFixed(2)}</span>
+                    <span className="font-bold text-purple-600">₹{revenueStats.monthly_admission_fees.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Bookings</span>
@@ -1042,7 +1042,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Weekly Revenue</span>
-                    <span className="font-bold text-green-600">${revenueStats.weekly_revenue.toFixed(2)}</span>
+                    <span className="font-bold text-green-600">₹{revenueStats.weekly_revenue.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                     <span className="text-gray-600">Weekly Bookings</span>
@@ -1079,12 +1079,12 @@ const AdminDashboard: React.FC = () => {
                         )}
                       </td>
                       <td className="px-6 py-4 text-gray-600">{p.tutor_name}</td>
-                      <td className="px-6 py-4 font-medium">${p.session_amount.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-blue-600">${p.commission_fee.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-medium">₹{p.session_amount.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-blue-600">₹{p.commission_fee.toFixed(2)}</td>
                       <td className="px-6 py-4 text-purple-600">
-                        {p.admission_fee > 0 ? `$${p.admission_fee.toFixed(2)}` : '-'}
+                        {p.admission_fee > 0 ? `₹${p.admission_fee.toFixed(2)}` : '-'}
                       </td>
-                      <td className="px-6 py-4 font-bold text-green-600">${p.total_platform_fee.toFixed(2)}</td>
+                      <td className="px-6 py-4 font-bold text-green-600">₹{p.total_platform_fee.toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                           p.status === 'completed' ? 'bg-green-100 text-green-700' :
