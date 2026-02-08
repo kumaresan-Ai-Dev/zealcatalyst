@@ -2154,6 +2154,16 @@ const TutorDashboard: React.FC = () => {
                         className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       />
                     </div>
+                    {tutorStats && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Minimum withdrawal: {tutorStats.currency} {tutorStats.minimum_withdrawal_amount.toFixed(2)}
+                      </p>
+                    )}
+                    {withdrawalAmount && tutorStats && parseFloat(withdrawalAmount) < tutorStats.minimum_withdrawal_amount && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Amount must be at least {tutorStats.currency} {tutorStats.minimum_withdrawal_amount.toFixed(2)}
+                      </p>
+                    )}
                   </div>
 
                   {/* Payment Method */}
@@ -2220,7 +2230,7 @@ const TutorDashboard: React.FC = () => {
                   {/* Submit Button */}
                   <button
                     onClick={handleWithdrawalRequest}
-                    disabled={withdrawalLoading || !withdrawalAmount || !paymentDetails}
+                    disabled={withdrawalLoading || !withdrawalAmount || !paymentDetails || (tutorStats ? parseFloat(withdrawalAmount) < tutorStats.minimum_withdrawal_amount : false)}
                     className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-600 transition-all duration-300 shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {withdrawalLoading ? (

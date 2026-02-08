@@ -39,6 +39,9 @@ class TutorStats(BaseModel):
     monthly_sessions: int
     monthly_earnings: float
 
+    # Withdrawal settings
+    minimum_withdrawal_amount: float = 10.0
+
 
 class WithdrawalRequest(BaseModel):
     """Schema for creating withdrawal request"""
@@ -147,6 +150,10 @@ async def get_tutor_stats(current_user: User = Depends(get_current_user)):
     monthly_sessions = len(monthly_payments)
     monthly_earnings = sum(p.tutor_earnings for p in monthly_payments)
 
+    # Get minimum withdrawal amount from platform settings
+    from app.models.platform_settings import PlatformSettings
+    platform_settings = await PlatformSettings.get_settings()
+
     return TutorStats(
         total_sessions=total_sessions,
         completed_sessions=completed_sessions,
@@ -158,7 +165,8 @@ async def get_tutor_stats(current_user: User = Depends(get_current_user)):
         withdrawn_amount=withdrawn_amount,
         currency=currency,
         monthly_sessions=monthly_sessions,
-        monthly_earnings=monthly_earnings
+        monthly_earnings=monthly_earnings,
+        minimum_withdrawal_amount=platform_settings.minimum_withdrawal_amount
     )
 
 
@@ -199,9 +207,20 @@ async def request_withdrawal(
 
     available_balance = total_earnings - pending_withdrawals - withdrawn_amount
 
+    # Get minimum withdrawal amount from platform settings
+    from app.models.platform_settings import PlatformSettings
+    platform_settings = await PlatformSettings.get_settings()
+    min_amount = platform_settings.minimum_withdrawal_amount
+
     # Validate amount
     if request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
+    if request.amount < min_amount:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Minimum withdrawal amount is {min_amount:.2f}"
+        )
 
     if request.amount > available_balance:
         raise HTTPException(

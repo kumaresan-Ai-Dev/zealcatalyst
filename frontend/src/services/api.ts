@@ -542,6 +542,17 @@ export const adminAPI = {
     const response = await api.get('/admin/revenue/tutor-earnings');
     return response.data;
   },
+
+  // Platform Settings
+  getSettings: async (): Promise<{ minimum_withdrawal_amount: number }> => {
+    const response = await api.get('/admin/settings');
+    return response.data;
+  },
+
+  updateSettings: async (data: { minimum_withdrawal_amount?: number }): Promise<{ minimum_withdrawal_amount: number }> => {
+    const response = await api.put('/admin/settings', data);
+    return response.data;
+  },
 };
 
 // Blog API Types
@@ -705,6 +716,7 @@ export interface TutorStats {
   currency: string;
   monthly_sessions: number;
   monthly_earnings: number;
+  minimum_withdrawal_amount: number;
 }
 
 export interface WithdrawalRequest {

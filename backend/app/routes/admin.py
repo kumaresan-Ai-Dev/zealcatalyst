@@ -610,3 +610,42 @@ async def get_tutor_earnings(tutor_id: str, admin: User = Depends(get_admin_user
         "email": tutor.email,
         **earnings
     }
+
+
+# --- Platform Settings ---
+
+class PlatformSettingsResponse(BaseModel):
+    minimum_withdrawal_amount: float
+
+class PlatformSettingsUpdate(BaseModel):
+    minimum_withdrawal_amount: Optional[float] = None
+
+
+@router.get("/settings", response_model=PlatformSettingsResponse)
+async def get_platform_settings(admin: User = Depends(get_admin_user)):
+    """Get platform settings"""
+    from app.models.platform_settings import PlatformSettings
+    settings = await PlatformSettings.get_settings()
+    return PlatformSettingsResponse(
+        minimum_withdrawal_amount=settings.minimum_withdrawal_amount
+    )
+
+
+@router.put("/settings", response_model=PlatformSettingsResponse)
+async def update_platform_settings(data: PlatformSettingsUpdate, admin: User = Depends(get_admin_user)):
+    """Update platform settings"""
+    from app.models.platform_settings import PlatformSettings
+    settings = await PlatformSettings.get_settings()
+
+    if data.minimum_withdrawal_amount is not None:
+        if data.minimum_withdrawal_amount < 0:
+            raise HTTPException(status_code=400, detail="Minimum withdrawal amount cannot be negative")
+        settings.minimum_withdrawal_amount = data.minimum_withdrawal_amount
+
+    settings.updated_at = datetime.utcnow()
+    settings.updated_by = str(admin.id)
+    await settings.save()
+
+    return PlatformSettingsResponse(
+        minimum_withdrawal_amount=settings.minimum_withdrawal_amount
+    )

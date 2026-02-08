@@ -72,6 +72,11 @@ const AdminDashboard: React.FC = () => {
   const [withdrawalNotes, setWithdrawalNotes] = useState('');
   const [withdrawalTxnId, setWithdrawalTxnId] = useState('');
 
+  // Platform settings
+  const [minWithdrawalAmount, setMinWithdrawalAmount] = useState(10);
+  const [minWithdrawalInput, setMinWithdrawalInput] = useState('10');
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
   // Blog editor states
   const [showBlogEditor, setShowBlogEditor] = useState(false);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
@@ -92,7 +97,7 @@ const AdminDashboard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsData, usersData, tutorsData, bookingsData, revenueData, paymentsData, blogsData, withdrawalsData, withdrawalStatsData] = await Promise.all([
+      const [statsData, usersData, tutorsData, bookingsData, revenueData, paymentsData, blogsData, withdrawalsData, withdrawalStatsData, settingsData] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.getUsers(),
         adminAPI.getTutors(),
@@ -101,7 +106,8 @@ const AdminDashboard: React.FC = () => {
         adminAPI.getPayments(),
         blogAPI.getAllBlogs(),
         withdrawalAPI.getAllWithdrawals(),
-        withdrawalAPI.getWithdrawalStats()
+        withdrawalAPI.getWithdrawalStats(),
+        adminAPI.getSettings().catch(() => ({ minimum_withdrawal_amount: 10 }))
       ]);
       setStats(statsData);
       setUsers(usersData);
@@ -112,6 +118,8 @@ const AdminDashboard: React.FC = () => {
       setBlogs(blogsData);
       setWithdrawals(withdrawalsData);
       setWithdrawalStats(withdrawalStatsData);
+      setMinWithdrawalAmount(settingsData.minimum_withdrawal_amount);
+      setMinWithdrawalInput(String(settingsData.minimum_withdrawal_amount));
     } catch (error) {
       console.error('Failed to fetch admin data:', error);
       setMessage({ type: 'error', text: 'Failed to load admin data' });
@@ -353,6 +361,25 @@ const AdminDashboard: React.FC = () => {
       showMessage('error', 'Failed to update withdrawal');
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  // Save minimum withdrawal setting
+  const handleSaveMinWithdrawal = async () => {
+    const amount = parseFloat(minWithdrawalInput);
+    if (isNaN(amount) || amount < 0) {
+      showMessage('error', 'Please enter a valid amount');
+      return;
+    }
+    setSettingsSaving(true);
+    try {
+      const result = await adminAPI.updateSettings({ minimum_withdrawal_amount: amount });
+      setMinWithdrawalAmount(result.minimum_withdrawal_amount);
+      showMessage('success', `Minimum withdrawal amount updated to ${amount}`);
+    } catch {
+      showMessage('error', 'Failed to update settings');
+    } finally {
+      setSettingsSaving(false);
     }
   };
 
@@ -1164,6 +1191,35 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Minimum Withdrawal Setting */}
+            <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Withdrawal Settings</h3>
+              <div className="flex items-center gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Minimum Withdrawal Amount</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 font-medium">₹</span>
+                    <input
+                      type="number"
+                      value={minWithdrawalInput}
+                      onChange={(e) => setMinWithdrawalInput(e.target.value)}
+                      min="0"
+                      step="1"
+                      className="w-32 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      onClick={handleSaveMinWithdrawal}
+                      disabled={settingsSaving || parseFloat(minWithdrawalInput) === minWithdrawalAmount}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {settingsSaving ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Tutors must earn at least this amount before they can request a withdrawal</p>
+                </div>
+              </div>
+            </div>
 
             {/* Filters */}
             <div className="flex gap-4 mb-6">
