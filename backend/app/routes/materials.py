@@ -312,16 +312,22 @@ async def create_rating(
     # Update tutor's average rating in their profile
     try:
         from app.models.tutor import TutorProfile
+        print(f"[Rating] Updating rating for tutor_id: {data.tutor_id}")
         all_ratings = await TutorRating.find(TutorRating.tutor_id == data.tutor_id).to_list()
+        print(f"[Rating] Found {len(all_ratings)} ratings for this tutor")
         if all_ratings:
             avg_rating = sum(r.rating for r in all_ratings) / len(all_ratings)
+            print(f"[Rating] Calculated average: {avg_rating}")
             tutor_profile = await TutorProfile.get(data.tutor_id)
             if tutor_profile:
                 tutor_profile.rating = round(avg_rating, 1)
                 tutor_profile.total_reviews = len(all_ratings)
                 await tutor_profile.save()
+                print(f"[Rating] Updated tutor profile - rating: {tutor_profile.rating}, reviews: {tutor_profile.total_reviews}")
+            else:
+                print(f"[Rating] Tutor profile not found for ID: {data.tutor_id}")
     except Exception as e:
-        print(f"Failed to update tutor rating: {e}")
+        print(f"[Rating] Failed to update tutor rating: {e}")
 
     return RatingResponse(
         id=str(rating.id),

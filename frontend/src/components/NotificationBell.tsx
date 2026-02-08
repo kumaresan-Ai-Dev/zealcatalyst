@@ -86,9 +86,6 @@ const NotificationItem: React.FC<{
             <p className={`text-sm ${!notification.is_read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
               {notification.title}
             </p>
-            <span className="text-xs text-gray-400 whitespace-nowrap">
-              {formatRelativeTime(notification.created_at)}
-            </span>
           </div>
           <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
             {notification.message}
