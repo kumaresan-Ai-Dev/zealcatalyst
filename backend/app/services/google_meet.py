@@ -27,9 +27,12 @@ from app.core.config import settings
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 
 # Token file to store user's access and refresh tokens
-# Use path relative to backend directory (same level as app folder)
+# Use /etc/easystudy/google_creds/ for production (survives CI/CD deploys)
+# Falls back to backend directory for local development
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TOKEN_FILE = os.path.join(BACKEND_DIR, 'token.json')
+PROD_TOKEN_FILE = '/etc/easystudy/google_creds/token.json'
+LOCAL_TOKEN_FILE = os.path.join(BACKEND_DIR, 'token.json')
+TOKEN_FILE = PROD_TOKEN_FILE if os.path.exists(PROD_TOKEN_FILE) else LOCAL_TOKEN_FILE
 
 
 class GoogleMeetService:
