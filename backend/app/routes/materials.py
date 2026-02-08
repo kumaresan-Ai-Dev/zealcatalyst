@@ -82,11 +82,53 @@ class RatingResponse(BaseModel):
 
 # ============== MATERIALS ROUTES ==============
 
+class BookedStudentResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+
+
+@router.get("/materials/students", response_model=List[BookedStudentResponse])
+async def get_booked_students(current_user: User = Depends(get_current_user)):
+    """Get all students who have booked sessions with this tutor"""
+    if current_user.role != "tutor":
+        raise HTTPException(status_code=403, detail="Only tutors can access this endpoint")
+
+    from app.models.booking import Booking
+    from app.models.tutor import TutorProfile
+
+    # Get tutor profile to find the tutor_id used in bookings
+    tutor_profile = await TutorProfile.find_one(TutorProfile.user_id == str(current_user.id))
+    if not tutor_profile:
+        return []
+
+    # Get all bookings for this tutor
+    bookings = await Booking.find(Booking.tutor_id == str(tutor_profile.id)).to_list()
+
+    # Get unique student IDs
+    student_ids = list(set(b.student_id for b in bookings if b.student_id))
+
+    # Get student details
+    students = []
+    for student_id in student_ids:
+        student = await User.get(student_id)
+        if student:
+            students.append(BookedStudentResponse(
+                id=str(student.id),
+                name=student.full_name,
+                email=student.email
+            ))
+
+    return students
+
+
 @router.post("/materials", response_model=MaterialResponse)
 async def create_material(
     title: str = Form(...),
     description: str = Form(""),
     subject: str = Form(...),
+    shared_with_all: str = Form("true"),
+    student_ids: str = Form(""),
     file: Optional[UploadFile] = File(None),
     current_user: User = Depends(get_current_user)
 ):
@@ -109,6 +151,10 @@ async def create_material(
             file_name = file.filename
             file_type = file.content_type
 
+    # Parse shared_with_all and student_ids
+    is_shared_with_all = shared_with_all.lower() == "true"
+    parsed_student_ids = [s.strip() for s in student_ids.split(",") if s.strip()] if student_ids else []
+
     material = Material(
         tutor_id=str(current_user.id),
         tutor_name=current_user.full_name,
@@ -117,7 +163,9 @@ async def create_material(
         subject=subject,
         file_url=file_url,
         file_name=file_name,
-        file_type=file_type
+        file_type=file_type,
+        shared_with_all=is_shared_with_all,
+        student_ids=parsed_student_ids
     )
     await material.insert()
 
@@ -137,7 +185,7 @@ async def create_material(
 
 @router.get("/materials", response_model=List[MaterialResponse])
 async def get_materials(current_user: User = Depends(get_current_user)):
-    """Get materials - tutors see their own, students see only from tutors they've booked with"""
+    """Get materials - tutors see their own, students see only materials shared with them"""
     if current_user.role == "tutor":
         materials = await Material.find(Material.tutor_id == str(current_user.id)).to_list()
     else:
@@ -147,9 +195,22 @@ async def get_materials(current_user: User = Depends(get_current_user)):
         tutor_ids = list(set(b.tutor_id for b in bookings if b.tutor_id))
 
         if tutor_ids:
-            # Only get materials from tutors the student has booked with
+            # Get tutor user IDs from tutor profiles
+            from app.models.tutor import TutorProfile
             from beanie.operators import In
-            materials = await Material.find(In(Material.tutor_id, tutor_ids)).to_list()
+            tutor_profiles = await TutorProfile.find(In(TutorProfile.id, [tutor_ids])).to_list()
+            tutor_user_ids = [tp.user_id for tp in tutor_profiles]
+            tutor_user_ids.extend(tutor_ids)  # Also include the tutor_ids in case they are user_ids
+
+            # Get all materials from tutors the student has booked with
+            all_materials = await Material.find(In(Material.tutor_id, tutor_user_ids)).to_list()
+
+            # Filter materials: only show if shared_with_all=True OR student is in student_ids
+            student_id = str(current_user.id)
+            materials = [
+                m for m in all_materials
+                if m.shared_with_all or student_id in m.student_ids
+            ]
         else:
             materials = []
 

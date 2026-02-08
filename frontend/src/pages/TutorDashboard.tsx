@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { tutorsAPI, availabilityAPI, bookingsAPI, withdrawalAPI, materialsAPI } from '../services/api';
 import ImageUpload from '../components/ImageUpload';
 import type { TutorProfile } from '../types';
-import type { AvailabilitySettings, WeeklySchedule, TimeSlot, CalendarDay, BlockedDate, BookingResponse, TutorStats, WithdrawalResponse, MaterialResponse, AssignmentResponse, RatingResponse } from '../services/api';
+import type { AvailabilitySettings, WeeklySchedule, TimeSlot, CalendarDay, BlockedDate, BookingResponse, TutorStats, WithdrawalResponse, MaterialResponse, AssignmentResponse, RatingResponse, BookedStudent } from '../services/api';
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -90,6 +90,9 @@ const TutorDashboard: React.FC = () => {
   const [materialForm, setMaterialForm] = useState({ title: '', description: '', subject: '' });
   const [materialFile, setMaterialFile] = useState<File | null>(null);
   const [materialLoading, setMaterialLoading] = useState(false);
+  const [bookedStudents, setBookedStudents] = useState<BookedStudent[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [shareWithAll, setShareWithAll] = useState(true);
 
   // Assignments state
   const [assignments, setAssignments] = useState<AssignmentResponse[]>([]);
@@ -128,6 +131,15 @@ const TutorDashboard: React.FC = () => {
       setMaterials(data);
     } catch (error) {
       console.error('Failed to fetch materials:', error);
+    }
+  };
+
+  const fetchBookedStudents = async () => {
+    try {
+      const data = await materialsAPI.getBookedStudents();
+      setBookedStudents(data);
+    } catch (error) {
+      console.error('Failed to fetch booked students:', error);
     }
   };
 
@@ -1424,7 +1436,12 @@ const TutorDashboard: React.FC = () => {
                 <p className="text-gray-600">Upload and manage ebooks, PDFs, and study materials for your students</p>
               </div>
               <button
-                onClick={() => setShowMaterialForm(true)}
+                onClick={() => {
+                  fetchBookedStudents();
+                  setShareWithAll(true);
+                  setSelectedStudents([]);
+                  setShowMaterialForm(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
               >
                 <Plus className="w-5 h-5" />
@@ -1476,6 +1493,70 @@ const TutorDashboard: React.FC = () => {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Share With</label>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input
+                            type="radio"
+                            name="shareWith"
+                            checked={shareWithAll}
+                            onChange={() => {
+                              setShareWithAll(true);
+                              setSelectedStudents([]);
+                            }}
+                            className="w-4 h-4 text-primary-600"
+                          />
+                          <div>
+                            <span className="font-medium text-gray-900">All Students</span>
+                            <p className="text-xs text-gray-500">Share with all students who booked with you</p>
+                          </div>
+                        </label>
+                        <label className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                          <input
+                            type="radio"
+                            name="shareWith"
+                            checked={!shareWithAll}
+                            onChange={() => setShareWithAll(false)}
+                            className="w-4 h-4 text-primary-600"
+                          />
+                          <div>
+                            <span className="font-medium text-gray-900">Specific Students</span>
+                            <p className="text-xs text-gray-500">Select individual students to share with</p>
+                          </div>
+                        </label>
+                        {!shareWithAll && (
+                          <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                            {bookedStudents.length === 0 ? (
+                              <p className="text-sm text-gray-500 text-center py-2">No students have booked with you yet</p>
+                            ) : (
+                              <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {bookedStudents.map(student => (
+                                  <label key={student.id} className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedStudents.includes(student.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedStudents([...selectedStudents, student.id]);
+                                        } else {
+                                          setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-primary-600 rounded"
+                                    />
+                                    <div>
+                                      <span className="text-sm font-medium text-gray-900">{student.name}</span>
+                                      <span className="text-xs text-gray-500 ml-2">{student.email}</span>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Upload File (PDF, DOC, etc.)</label>
                       <label className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary-400 transition-colors cursor-pointer block">
                         <input
@@ -1514,12 +1595,16 @@ const TutorDashboard: React.FC = () => {
                           formData.append('title', materialForm.title);
                           formData.append('description', materialForm.description);
                           formData.append('subject', materialForm.subject);
+                          formData.append('shared_with_all', shareWithAll.toString());
+                          formData.append('student_ids', selectedStudents.join(','));
                           if (materialFile) {
                             formData.append('file', materialFile);
                           }
                           const newMaterial = await materialsAPI.createMaterial(formData);
                           setMaterials([newMaterial, ...materials]);
                           setMaterialForm({ title: '', description: '', subject: '' });
+                          setShareWithAll(true);
+                          setSelectedStudents([]);
                           setMaterialFile(null);
                           setShowMaterialForm(false);
                           setMessage({ type: 'success', text: 'Material added successfully!' });
@@ -1550,7 +1635,12 @@ const TutorDashboard: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Materials Yet</h3>
                   <p className="text-gray-500 mb-4">Start by adding your first reading material for students</p>
                   <button
-                    onClick={() => setShowMaterialForm(true)}
+                    onClick={() => {
+                      fetchBookedStudents();
+                      setShareWithAll(true);
+                      setSelectedStudents([]);
+                      setShowMaterialForm(true);
+                    }}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors font-medium"
                   >
                     <Plus className="w-5 h-5" />

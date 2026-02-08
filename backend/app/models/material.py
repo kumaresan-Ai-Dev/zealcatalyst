@@ -1,6 +1,6 @@
 from beanie import Document
 from pydantic import Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -14,6 +14,8 @@ class Material(Document):
     file_url: Optional[str] = None
     file_name: Optional[str] = None
     file_type: Optional[str] = None
+    shared_with_all: bool = True  # If True, shared with all students who booked with tutor
+    student_ids: List[str] = Field(default_factory=list)  # Specific student IDs if not shared with all
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

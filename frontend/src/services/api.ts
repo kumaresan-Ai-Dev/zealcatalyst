@@ -866,8 +866,21 @@ export interface RatingResponse {
   created_at: string;
 }
 
+// Booked Student type
+export interface BookedStudent {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // Materials & Learning API
 export const materialsAPI = {
+  // Get students who booked with this tutor
+  getBookedStudents: async (): Promise<BookedStudent[]> => {
+    const response = await api.get('/materials/students');
+    return response.data;
+  },
+
   // Materials
   createMaterial: async (data: FormData): Promise<MaterialResponse> => {
     const response = await api.post('/materials', data, {
