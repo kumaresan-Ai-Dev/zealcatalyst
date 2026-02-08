@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Calendar, Clock, DollarSign, BookOpen,
@@ -32,7 +33,16 @@ const LANGUAGES_LIST = ['English', 'Spanish', 'French', 'German', 'Mandarin', 'H
 
 const TutorDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'profile' | 'availability' | 'calendar' | 'earnings' | 'materials' | 'assignments' | 'feedback'>('profile');
+
+  // Handle tab query parameter from notifications
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['profile', 'availability', 'calendar', 'earnings', 'materials', 'assignments', 'feedback'].includes(tabParam)) {
+      setActiveTab(tabParam as typeof activeTab);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);

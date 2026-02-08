@@ -114,7 +114,7 @@ class NotificationService:
             notification_type=NotificationType.BOOKING_NEW,
             title="New Booking Request",
             message=f"{student_name} wants to book a {subject} session on {formatted_time}",
-            link=f"/tutor/bookings",
+            link="/tutor/dashboard?tab=calendar",
             related_id=booking_id,
             actor_id=student_id,
             actor_name=student_name
@@ -155,7 +155,7 @@ class NotificationService:
             notification_type=NotificationType.BOOKING_CONFIRMED,
             title="Booking Confirmed",
             message=f"Your {subject} session with {tutor_name} on {formatted_time} has been confirmed!",
-            link=f"/student/bookings",
+            link="/student/dashboard?tab=sessions",
             related_id=booking_id,
             actor_id=tutor_id,
             actor_name=tutor_name
@@ -190,7 +190,7 @@ class NotificationService:
     ) -> Notification:
         """Notify user that a booking was cancelled."""
         formatted_time = scheduled_at.strftime("%B %d, %Y at %I:%M %p")
-        link = "/student/bookings" if is_student else "/tutor/bookings"
+        link = "/student/dashboard?tab=sessions" if is_student else "/tutor/dashboard?tab=calendar"
         notification = await NotificationService.create_notification(
             user_id=user_id,
             notification_type=NotificationType.BOOKING_CANCELLED,
@@ -230,7 +230,7 @@ class NotificationService:
         """Send a reminder notification for an upcoming session."""
         formatted_time = scheduled_at.strftime("%I:%M %p")
         role = "tutor" if is_student else "student"
-        link = "/student/bookings" if is_student else "/tutor/bookings"
+        link = "/student/dashboard?tab=sessions" if is_student else "/tutor/dashboard?tab=calendar"
         return await NotificationService.create_notification(
             user_id=user_id,
             notification_type=NotificationType.BOOKING_REMINDER,
@@ -298,7 +298,7 @@ class NotificationService:
             notification_type=NotificationType.REVIEW_RECEIVED,
             title="New Review Received",
             message=f"{student_name} left you a {rating}-star review {stars}",
-            link="/tutor/reviews",
+            link="/tutor/dashboard?tab=feedback",
             related_id=booking_id,
             actor_id=student_id,
             actor_name=student_name

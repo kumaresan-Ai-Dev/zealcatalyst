@@ -3,35 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, BookOpen, ArrowRight, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../services/api';
-
-// Google Client ID from environment variable
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
-// Declare google global
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-          }) => void;
-          renderButton: (
-            element: HTMLElement,
-            config: {
-              theme?: string;
-              size?: string;
-              width?: number;
-              text?: string;
-            }
-          ) => void;
-        };
-      };
-    };
-  }
-}
 
 interface LocationState {
   from?: string;
@@ -44,60 +15,13 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const { login, loginWithToken, user } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as LocationState | null;
   const redirectMessage = locationState?.message;
   const redirectFrom = locationState?.from;
-
-  // Load Google Sign-In script
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      if (window.google) {
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleGoogleCallback,
-        });
-        const buttonDiv = document.getElementById('google-signin-button');
-        if (buttonDiv) {
-          window.google.accounts.id.renderButton(buttonDiv, {
-            theme: 'outline',
-            size: 'large',
-            width: 400,
-            text: 'continue_with',
-          });
-        }
-      }
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  const handleGoogleCallback = async (response: { credential: string }) => {
-    setGoogleLoading(true);
-    setError('');
-    try {
-      const authResponse = await authAPI.googleAuth(response.credential);
-      loginWithToken(authResponse.access_token, authResponse.user);
-    } catch (err: unknown) {
-      console.error('Google auth error:', err);
-      const axiosError = err as { response?: { data?: { detail?: string } } };
-      setError(axiosError?.response?.data?.detail || 'Google sign-in failed');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   // Redirect after successful login based on user role or redirect path
   useEffect(() => {
@@ -248,28 +172,6 @@ const Login: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="my-8 flex items-center">
-            <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-4 text-sm text-gray-500">or continue with</span>
-            <div className="flex-1 border-t border-gray-200"></div>
-          </div>
-
-          {/* Google Sign-In */}
-          <div className="flex justify-center">
-            {googleLoading ? (
-              <div className="flex items-center justify-center py-3">
-                <svg className="animate-spin h-5 w-5 text-primary-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span className="text-gray-600">Signing in with Google...</span>
-              </div>
-            ) : (
-              <div id="google-signin-button" className="w-full flex justify-center"></div>
-            )}
-          </div>
 
           {/* Sign Up Link */}
           <p className="mt-8 text-center text-gray-600">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar, Clock, Video, DollarSign,
@@ -23,6 +24,7 @@ interface RecordedSession {
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -38,6 +40,14 @@ const StudentDashboard: React.FC = () => {
   const [ratingForm, setRatingForm] = useState({ tutor_id: '', tutor_name: '', subject: '', rating: 5, comment: '' });
   const [selectedBookingForRating, setSelectedBookingForRating] = useState<BookingResponse | null>(null);
   const [ratingLoading, setRatingLoading] = useState(false);
+
+  // Handle tab query parameter from notifications
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['sessions', 'recordings', 'materials', 'feedback'].includes(tabParam)) {
+      setMainTab(tabParam as typeof mainTab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchBookings();
