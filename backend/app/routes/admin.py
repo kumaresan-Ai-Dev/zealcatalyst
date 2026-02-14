@@ -625,7 +625,7 @@ class PlatformSettingsUpdate(BaseModel):
 async def get_platform_settings(admin: User = Depends(get_admin_user)):
     """Get platform settings"""
     from app.models.platform_settings import PlatformSettings
-    settings = await PlatformSettings.get_settings()
+    settings = await PlatformSettings.get_or_create()
     return PlatformSettingsResponse(
         minimum_withdrawal_amount=settings.minimum_withdrawal_amount
     )
@@ -635,7 +635,7 @@ async def get_platform_settings(admin: User = Depends(get_admin_user)):
 async def update_platform_settings(data: PlatformSettingsUpdate, admin: User = Depends(get_admin_user)):
     """Update platform settings"""
     from app.models.platform_settings import PlatformSettings
-    settings = await PlatformSettings.get_settings()
+    settings = await PlatformSettings.get_or_create()
 
     if data.minimum_withdrawal_amount is not None:
         if data.minimum_withdrawal_amount < 0:

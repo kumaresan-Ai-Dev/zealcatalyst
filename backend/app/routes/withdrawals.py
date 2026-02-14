@@ -152,7 +152,7 @@ async def get_tutor_stats(current_user: User = Depends(get_current_user)):
 
     # Get minimum withdrawal amount from platform settings
     from app.models.platform_settings import PlatformSettings
-    platform_settings = await PlatformSettings.get_settings()
+    platform_settings = await PlatformSettings.get_or_create()
 
     return TutorStats(
         total_sessions=total_sessions,
@@ -209,7 +209,7 @@ async def request_withdrawal(
 
     # Get minimum withdrawal amount from platform settings
     from app.models.platform_settings import PlatformSettings
-    platform_settings = await PlatformSettings.get_settings()
+    platform_settings = await PlatformSettings.get_or_create()
     min_amount = platform_settings.minimum_withdrawal_amount
 
     # Validate amount

@@ -18,7 +18,7 @@ class PlatformSettings(Document):
         name = "platform_settings"
 
     @classmethod
-    async def get_settings(cls) -> "PlatformSettings":
+    async def get_or_create(cls) -> "PlatformSettings":
         """Get the platform settings (creates default if none exist)"""
         settings = await cls.find_one()
         if not settings:
